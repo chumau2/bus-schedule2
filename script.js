@@ -191,16 +191,26 @@ function renderRoutes(query = '') {
       timesHtml += `<button class="add-time-chip" onclick="addTime('${r.id}')">${i18n[currentLang].addTime}</button>`;
     }
 
-    card.innerHTML = `
-      <div class="route-head">
-        <div class="route-num">${terminalText}</div>
-        <div class="route-name">
-          ➔ ${destText}
-          <span class="stops">${viaText}</span>
-        </div>
-      </div>
-      <div class="time-board">${timesHtml}</div>
-    `;
+card.innerHTML = `
+  <div class="route-head">
+    <div class="route-num">${terminalText}</div>
+
+    <div class="route-name">
+      ➔ ${destText}
+      <span class="stops">${viaText}</span>
+    </div>
+
+    <div class="route-tools">
+      <button class="btn btn-sm btn-green"
+              onclick="speakRoute('${r.id}')">
+        🔊
+      </button>
+    </div>
+
+  </div>
+
+  <div class="time-board">${timesHtml}</div>
+`;
 
     container.appendChild(card);
   });
