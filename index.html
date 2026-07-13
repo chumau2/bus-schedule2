@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>음성·금왕 버스 시간표 안내 | Bus Timetable</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght=500;600;700&family=Inter:wght=400;500;600;700&family=Roboto+Mono:wght=500;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS 연결 -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div class="brand">
+      <div class="badge">TERMINAL</div>
+      <div>
+        <h1 data-i18n="siteTitle">시외버스 시간표 안내</h1>
+        <div class="sub" data-i18n="siteSub">음성터미널 · 금왕터미널 직행 노선</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost" id="langToggle">ENG</button>
+      <button class="btn btn-yellow" id="adminBtn" data-i18n="adminLogin">관리자 로그인</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- 검색창 -->
+  <div class="search-bar">
+    <input id="searchInput" type="text" data-i18n-ph="searchPh" placeholder="터미널명 또는 행선지 검색 (예: 동서울, 청주, 금왕)">
+    <button class="btn btn-outline" id="searchBtn" data-i18n="search">검색</button>
+  </div>
+
+  <!-- 관리자 상태 표시줄 -->
+  <div class="admin-strip" id="adminStrip" style="display:none;">
+    <span><strong data-i18n="adminMode">관리자 모드</strong> - 시간 추가/수정/삭제 및 노선 관리가 가능합니다.</span>
+    <button class="btn btn-sm btn-red" id="logoutBtn" data-i18n="logout">로그아웃</button>
+  </div>
+
+  <!-- 시간표 카드가 출력되는 영역 -->
+  <div id="routeList"></div>
+
+  <!-- 설문조사 섹션 -->
+  <section class="survey">
+    <h2 data-i18n="surveyTitle">시간표 만족도 및 의견 제출</h2>
+    <p class="desc" data-i18n="surveyDesc">시간표 정보의 정확도나 개선점 의견을 자유롭게 남겨주세요.</p>
+    
+    <div class="stars" id="starGroup">
+      <button class="star active" data-val="1">★</button>
+      <button class="star active" data-val="2">★</button>
+      <button class="star active" data-val="3">★</button>
+      <button class="star active" data-val="4">★</button>
+      <button class="star active" data-val="5">★</button>
+    </div>
+
+    <textarea id="surveyComment" data-i18n-ph="surveyPh" placeholder="의견을 적어주세요 (선택사항)"></textarea>
+    <button class="btn btn-yellow" id="submitSurveyBtn" data-i18n="submitSurvey">의견 제출하기</button>
+
+    <div id="surveyList"></div>
+  </section>
+</main>
+
+<footer>
+  <p>© 음성·금왕 버스 시간표 안내 서비스</p>
+</footer>
+
+<!-- 알림 토스트 -->
+<div id="toast"><span class="dot"></span><span id="toastMsg"></span></div>
+
+<!-- 관리자 로그인 모달 -->
+<div class="modal-bg" id="loginModal">
+  <div class="modal">
+    <h3 data-i18n="loginTitle">관리자 로그인</h3>
+    <p class="hint" data-i18n="loginHint">비밀번호를 입력하세요 (기본: admin1234)</p>
+    <input type="password" id="adminPwInput" placeholder="Password">
+    <div class="err" id="loginErr" style="display:none;" data-i18n="loginErr">비밀번호가 올바르지 않습니다.</div>
+    <div class="row">
+      <button class="btn btn-outline" id="closeModalBtn" data-i18n="cancel">취소</button>
+      <button class="btn btn-yellow" id="doLoginBtn" data-i18n="login">로그인</button>
+    </div>
+  </div>
+</div>
+
+<!-- JS 연결 -->
+<script src="script.js"></script>
+</body>
+</html>
