@@ -1,10 +1,10 @@
-// 초기 노선 데이터 정의
+// 초기 노선 데이터 정의 (한국어 / 영어 다국어 지원)
 const defaultRoutes = [
   {
     id: "r1",
-    terminal: "음성터미널",
-    dest: "동서울",
-    via: "금왕, 일죽 경유",
+    terminal: { ko: "음성터미널", en: "Eumseong Terminal" },
+    dest: { ko: "동서울", en: "East Seoul" },
+    via: { ko: "금왕, 일죽 경유", en: "via Geumwang, Iljuk" },
     times: [
       { time: "06:30", modified: false },
       { time: "08:10", modified: false },
@@ -17,9 +17,9 @@ const defaultRoutes = [
   },
   {
     id: "r2",
-    terminal: "음성터미널",
-    dest: "청주",
-    via: "증평, 북청주 경유",
+    terminal: { ko: "음성터미널", en: "Eumseong Terminal" },
+    dest: { ko: "청주", en: "Cheongju" },
+    via: { ko: "증평, 북청주 경유", en: "via Jeungpyeong, N.Cheongju" },
     times: [
       { time: "07:00", modified: false },
       { time: "08:40", modified: false },
@@ -31,9 +31,9 @@ const defaultRoutes = [
   },
   {
     id: "r3",
-    terminal: "금왕터미널",
-    dest: "동서울",
-    via: "일죽, 하이패스 직행",
+    terminal: { ko: "금왕터미널", en: "Geumwang Terminal" },
+    dest: { ko: "동서울", en: "East Seoul" },
+    via: { ko: "일죽, 하이패스 직행", en: "via Iljuk, Direct" },
     times: [
       { time: "06:50", modified: false },
       { time: "08:30", modified: false },
@@ -46,9 +46,9 @@ const defaultRoutes = [
   },
   {
     id: "r4",
-    terminal: "금왕터미널",
-    dest: "충주",
-    via: "주덕 경유",
+    terminal: { ko: "금왕터미널", en: "Geumwang Terminal" },
+    dest: { ko: "충주", en: "Chungju" },
+    via: { ko: "주덕 경유", en: "via Judeok" },
     times: [
       { time: "07:20", modified: false },
       { time: "09:10", modified: false },
@@ -146,9 +146,20 @@ function renderRoutes(query = '') {
   const container = document.getElementById('routeList');
   container.innerHTML = '';
 
-  const filtered = routes.filter(r => 
-    r.terminal.includes(query) || r.dest.includes(query) || r.via.includes(query)
-  );
+  const q = query.toLowerCase();
+
+  const filtered = routes.filter(r => {
+    const termKo = typeof r.terminal === 'object' ? r.terminal.ko : r.terminal;
+    const termEn = typeof r.terminal === 'object' ? r.terminal.en : '';
+    const destKo = typeof r.dest === 'object' ? r.dest.ko : r.dest;
+    const destEn = typeof r.dest === 'object' ? r.dest.en : '';
+    const viaKo = typeof r.via === 'object' ? r.via.ko : r.via;
+    const viaEn = typeof r.via === 'object' ? r.via.en : '';
+
+    return termKo.toLowerCase().includes(q) || termEn.toLowerCase().includes(q) ||
+           destKo.toLowerCase().includes(q) || destEn.toLowerCase().includes(q) ||
+           viaKo.toLowerCase().includes(q) || viaEn.toLowerCase().includes(q);
+  });
 
   if (filtered.length === 0) {
     container.innerHTML = `<div class="empty">${i18n[currentLang].noResults}</div>`;
@@ -158,6 +169,10 @@ function renderRoutes(query = '') {
   filtered.forEach(r => {
     const card = document.createElement('div');
     card.className = 'route-card';
+
+    const terminalText = typeof r.terminal === 'object' ? (r.terminal[currentLang] || r.terminal.ko) : r.terminal;
+    const destText = typeof r.dest === 'object' ? (r.dest[currentLang] || r.dest.ko) : r.dest;
+    const viaText = typeof r.via === 'object' ? (r.via[currentLang] || r.via.ko) : r.via;
 
     let timesHtml = r.times.map((t, idx) => `
       <div class="time-chip ${t.modified ? 'modified' : ''} ${isAdmin ? 'admin' : ''}">
@@ -178,10 +193,10 @@ function renderRoutes(query = '') {
 
     card.innerHTML = `
       <div class="route-head">
-        <div class="route-num">${r.terminal}</div>
+        <div class="route-num">${terminalText}</div>
         <div class="route-name">
-          ➔ ${r.dest}
-          <span class="stops">${r.via}</span>
+          ➔ ${destText}
+          <span class="stops">${viaText}</span>
         </div>
       </div>
       <div class="time-board">${timesHtml}</div>
@@ -254,6 +269,12 @@ function saveAndRender() {
 
 // 이벤트 리스너 등록
 document.addEventListener('DOMContentLoaded', () => {
+  // 웹 브라우저에 구 버전 데이터가 남아있을 경우 초기화
+  if (routes.length > 0 && typeof routes[0].terminal === 'string') {
+    localStorage.removeItem('bus_routes');
+    routes = defaultRoutes;
+  }
+
   // 검색 기능
   document.getElementById('searchBtn').addEventListener('click', () => {
     renderRoutes(document.getElementById('searchInput').value.trim());
@@ -266,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('langToggle').addEventListener('click', () => {
     currentLang = currentLang === 'ko' ? 'en' : 'ko';
     applyLanguage();
-    renderRoutes();
+    renderRoutes(document.getElementById('searchInput').value.trim());
   });
 
   // 관리자 모달 제어
