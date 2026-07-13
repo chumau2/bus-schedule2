@@ -352,4 +352,17 @@ document.addEventListener('DOMContentLoaded', () => {
   applyLanguage();
   renderRoutes();
   renderSurveys();
+
+  function speak(text) {
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = currentLang === "ko" ? "ko-KR" : "en-US";
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utter);
+}
+  function speak(text) {
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = currentLang === "ko" ? "ko-KR" : "en-US";
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utter);
+}
 });
