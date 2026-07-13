@@ -359,10 +359,26 @@ document.addEventListener('DOMContentLoaded', () => {
   speechSynthesis.cancel();
   speechSynthesis.speak(utter);
 }
-  function speak(text) {
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = currentLang === "ko" ? "ko-KR" : "en-US";
-  speechSynthesis.cancel();
-  speechSynthesis.speak(utter);
-}
+  window.speakRoute = function(routeId) {
+  const route = routes.find(r => r.id === routeId);
+  if (!route) return;
+
+  const terminal = typeof route.terminal === "object"
+    ? route.terminal[currentLang]
+    : route.terminal;
+
+  const dest = typeof route.dest === "object"
+    ? route.dest[currentLang]
+    : route.dest;
+
+  const times = route.times.map(t => t.time).join(", ");
+
+  const text =
+    currentLang === "ko"
+      ? `${terminal}에서 ${dest}행 버스 출발 시간은 ${times}입니다.`
+      : `The bus from ${terminal} to ${dest} departs at ${times}.`;
+
+  speak(text);
+};
+  
 });
