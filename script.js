@@ -1,0 +1,334 @@
+// 초기 노선 데이터 정의
+const defaultRoutes = [
+  {
+    id: "r1",
+    terminal: "음성터미널",
+    dest: "동서울",
+    via: "금왕, 일죽 경유",
+    times: [
+      { time: "06:30", modified: false },
+      { time: "08:10", modified: false },
+      { time: "10:00", modified: false },
+      { time: "12:30", modified: false },
+      { time: "14:50", modified: false },
+      { time: "17:10", modified: false },
+      { time: "19:30", modified: false }
+    ]
+  },
+  {
+    id: "r2",
+    terminal: "음성터미널",
+    dest: "청주",
+    via: "증평, 북청주 경유",
+    times: [
+      { time: "07:00", modified: false },
+      { time: "08:40", modified: false },
+      { time: "10:30", modified: false },
+      { time: "13:10", modified: false },
+      { time: "15:40", modified: false },
+      { time: "18:20", modified: false }
+    ]
+  },
+  {
+    id: "r3",
+    terminal: "금왕터미널",
+    dest: "동서울",
+    via: "일죽, 하이패스 직행",
+    times: [
+      { time: "06:50", modified: false },
+      { time: "08:30", modified: false },
+      { time: "10:20", modified: false },
+      { time: "12:50", modified: false },
+      { time: "15:10", modified: false },
+      { time: "17:30", modified: false },
+      { time: "19:50", modified: false }
+    ]
+  },
+  {
+    id: "r4",
+    terminal: "금왕터미널",
+    dest: "충주",
+    via: "주덕 경유",
+    times: [
+      { time: "07:20", modified: false },
+      { time: "09:10", modified: false },
+      { time: "11:40", modified: false },
+      { time: "14:00", modified: false },
+      { time: "16:30", modified: false },
+      { time: "19:00", modified: false }
+    ]
+  }
+];
+
+// 다국어 번역 데이터
+const i18n = {
+  ko: {
+    siteTitle: "시외버스 시간표 안내",
+    siteSub: "음성터미널 · 금왕터미널 직행 노선",
+    adminLogin: "관리자 로그인",
+    searchPh: "터미널명 또는 행선지 검색 (예: 동서울, 청주, 금왕)",
+    search: "검색",
+    adminMode: "관리자 모드",
+    logout: "로그아웃",
+    surveyTitle: "시간표 만족도 및 의견 제출",
+    surveyDesc: "시간표 정보의 정확도나 개선점 의견을 자유롭게 남겨주세요.",
+    surveyPh: "의견을 적어주세요 (선택사항)",
+    submitSurvey: "의견 제출하기",
+    loginTitle: "관리자 로그인",
+    loginHint: "비밀번호를 입력하세요 (기본: admin1234)",
+    cancel: "취소",
+    login: "로그인",
+    loginErr: "비밀번호가 올바르지 않습니다.",
+    noResults: "검색 결과가 없습니다.",
+    addTime: "+ 시간 추가",
+    modified: "변경됨",
+    toastSurveySubmitted: "의견이 정상적으로 제출되었습니다.",
+    toastAdminSuccess: "관리자로 로그인되었습니다.",
+    toastLoggedOut: "로그아웃되었습니다."
+  },
+  en: {
+    siteTitle: "Intercity Bus Timetable",
+    siteSub: "Eumseong · Geumwang Terminal Direct Routes",
+    adminLogin: "Admin Login",
+    searchPh: "Search terminal or destination...",
+    search: "Search",
+    adminMode: "Admin Mode",
+    logout: "Logout",
+    surveyTitle: "Feedback & Survey",
+    surveyDesc: "Please share your thoughts on timetable accuracy or suggestions.",
+    surveyPh: "Leave a comment (optional)",
+    submitSurvey: "Submit Feedback",
+    loginTitle: "Admin Login",
+    loginHint: "Enter password (default: admin1234)",
+    cancel: "Cancel",
+    login: "Login",
+    loginErr: "Incorrect password.",
+    noResults: "No routes found.",
+    addTime: "+ Add Time",
+    modified: "Modified",
+    toastSurveySubmitted: "Thank you for your feedback!",
+    toastAdminSuccess: "Logged in as Admin.",
+    toastLoggedOut: "Logged out."
+  }
+};
+
+let currentLang = 'ko';
+let isAdmin = false;
+let selectedStar = 5;
+
+// LocalStorage 초기화
+let routes = JSON.parse(localStorage.getItem('bus_routes')) || defaultRoutes;
+let surveys = JSON.parse(localStorage.getItem('bus_surveys')) || [];
+
+// Toast 메세지 표시
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toastMsg').innerText = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// 언어 적용
+function applyLanguage() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[currentLang][key]) el.innerText = i18n[currentLang][key];
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const key = el.getAttribute('data-i18n-ph');
+    if (i18n[currentLang][key]) el.placeholder = i18n[currentLang][key];
+  });
+  document.getElementById('langToggle').innerText = currentLang === 'ko' ? 'ENG' : 'KOR';
+}
+
+// 시간표 화면 렌더링
+function renderRoutes(query = '') {
+  const container = document.getElementById('routeList');
+  container.innerHTML = '';
+
+  const filtered = routes.filter(r => 
+    r.terminal.includes(query) || r.dest.includes(query) || r.via.includes(query)
+  );
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty">${i18n[currentLang].noResults}</div>`;
+    return;
+  }
+
+  filtered.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'route-card';
+
+    let timesHtml = r.times.map((t, idx) => `
+      <div class="time-chip ${t.modified ? 'modified' : ''} ${isAdmin ? 'admin' : ''}">
+        <span class="t">${t.time}</span>
+        ${t.modified ? '<span class="mod-dot" title="변경됨"></span>' : ''}
+        ${isAdmin ? `
+          <div class="chip-actions">
+            <button class="chip-icon-btn" onclick="editTime('${r.id}', ${idx})">✎</button>
+            <button class="chip-icon-btn" onclick="deleteTime('${r.id}', ${idx})">✕</button>
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+
+    if (isAdmin) {
+      timesHtml += `<button class="add-time-chip" onclick="addTime('${r.id}')">${i18n[currentLang].addTime}</button>`;
+    }
+
+    card.innerHTML = `
+      <div class="route-head">
+        <div class="route-num">${r.terminal}</div>
+        <div class="route-name">
+          ➔ ${r.dest}
+          <span class="stops">${r.via}</span>
+        </div>
+      </div>
+      <div class="time-board">${timesHtml}</div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+// 설문 목록 렌더링
+function renderSurveys() {
+  const container = document.getElementById('surveyList');
+  if (surveys.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = '<h3>최근 작성된 의견</h3>' + surveys.map(s => `
+    <div class="survey-item">
+      <div class="si-top">
+        <span class="si-stars">${'★'.repeat(s.star)}${'☆'.repeat(5 - s.star)}</span>
+        <span class="si-date">${s.date}</span>
+      </div>
+      ${s.comment ? `<div class="si-comment">${escapeHtml(s.comment)}</div>` : '<div class="si-nocomment">의견 내용 없음</div>'}
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// 시간 관리 (추가/수정/삭제)
+window.addTime = function(routeId) {
+  const newTime = prompt("추가할 시간을 입력하세요 (예: 14:20):");
+  if (!newTime) return;
+  const route = routes.find(r => r.id === routeId);
+  if (route) {
+    route.times.push({ time: newTime, modified: true });
+    route.times.sort((a,b) => a.time.localeCompare(b.time));
+    saveAndRender();
+  }
+};
+
+window.editTime = function(routeId, index) {
+  const route = routes.find(r => r.id === routeId);
+  if (!route) return;
+  const newTime = prompt("수정할 시간을 입력하세요:", route.times[index].time);
+  if (newTime) {
+    route.times[index].time = newTime;
+    route.times[index].modified = true;
+    route.times.sort((a,b) => a.time.localeCompare(b.time));
+    saveAndRender();
+  }
+};
+
+window.deleteTime = function(routeId, index) {
+  if (!confirm("이 시간을 삭제하시겠습니까?")) return;
+  const route = routes.find(r => r.id === routeId);
+  if (route) {
+    route.times.splice(index, 1);
+    saveAndRender();
+  }
+};
+
+function saveAndRender() {
+  localStorage.setItem('bus_routes', JSON.stringify(routes));
+  renderRoutes(document.getElementById('searchInput').value.trim());
+}
+
+// 이벤트 리스너 등록
+document.addEventListener('DOMContentLoaded', () => {
+  // 검색 기능
+  document.getElementById('searchBtn').addEventListener('click', () => {
+    renderRoutes(document.getElementById('searchInput').value.trim());
+  });
+  document.getElementById('searchInput').addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') renderRoutes(e.target.value.trim());
+  });
+
+  // 언어 변경
+  document.getElementById('langToggle').addEventListener('click', () => {
+    currentLang = currentLang === 'ko' ? 'en' : 'ko';
+    applyLanguage();
+    renderRoutes();
+  });
+
+  // 관리자 모달 제어
+  const modal = document.getElementById('loginModal');
+  document.getElementById('adminBtn').addEventListener('click', () => modal.classList.add('show'));
+  document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.remove('show'));
+
+  // 로그인 처리
+  document.getElementById('doLoginBtn').addEventListener('click', () => {
+    const pw = document.getElementById('adminPwInput').value;
+    if (pw === 'admin1234') {
+      isAdmin = true;
+      modal.classList.remove('show');
+      document.getElementById('adminStrip').style.display = 'flex';
+      document.getElementById('adminBtn').style.display = 'none';
+      document.getElementById('adminPwInput').value = '';
+      document.getElementById('loginErr').style.display = 'none';
+      showToast(i18n[currentLang].toastAdminSuccess);
+      renderRoutes();
+    } else {
+      document.getElementById('loginErr').style.display = 'block';
+    }
+  });
+
+  // 로그아웃
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    isAdmin = false;
+    document.getElementById('adminStrip').style.display = 'none';
+    document.getElementById('adminBtn').style.display = 'block';
+    showToast(i18n[currentLang].toastLoggedOut);
+    renderRoutes();
+  });
+
+  // 별점 평가
+  const stars = document.querySelectorAll('#starGroup .star');
+  stars.forEach(star => {
+    star.addEventListener('click', () => {
+      selectedStar = parseInt(star.getAttribute('data-val'));
+      stars.forEach((s, idx) => {
+        if (idx < selectedStar) s.classList.add('active');
+        else s.classList.remove('active');
+      });
+    });
+  });
+
+  // 설문 제출
+  document.getElementById('submitSurveyBtn').addEventListener('click', () => {
+    const comment = document.getElementById('surveyComment').value.trim();
+    const newSurvey = {
+      star: selectedStar,
+      comment: comment,
+      date: new Date().toLocaleDateString()
+    };
+    surveys.unshift(newSurvey);
+    localStorage.setItem('bus_surveys', JSON.stringify(surveys));
+    document.getElementById('surveyComment').value = '';
+    showToast(i18n[currentLang].toastSurveySubmitted);
+    renderSurveys();
+  });
+
+  // 초기 실행
+  applyLanguage();
+  renderRoutes();
+  renderSurveys();
+});
