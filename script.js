@@ -1,4 +1,4 @@
-// Firebase 설정 (프로젝트 키값 적용)
+// Firebase 설정 (1번만 선언)
 const firebaseConfig = {
   apiKey: "AIzaSyDgKi46rw82_fICQO02CbUk4e2FGMP3IeE",
   authDomain: "chma-422a0.firebaseapp.com",
@@ -9,7 +9,7 @@ const firebaseConfig = {
   appId: "1:892005342672:web:84e1a91af343b034f2edd5"
 };
 
-// Firebase 초기화 및 Realtime Database 연결
+// Firebase 초기화
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
