@@ -9,11 +9,19 @@ const firebaseConfig = {
   appId: "1:892005342672:web:84e1a91af343b034f2edd5"
 };
 
-// Firebase 초기화
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.database();
+// Firebase 초기화 (안전하게 window 객체에서 불러오기)
+let db;
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof firebase !== 'undefined') {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.database();
+    listenSurveys(); // DB 로드 완료 후 의견 불러오기 실행
+  } else {
+    console.error("Firebase SDK가 아직 로드되지 않았습니다.");
+  }
+});
 
 // 초기 노선 데이터 정의 (한국어 / 영어 다국어 지원)
 const defaultRoutes = [
