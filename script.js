@@ -1,8 +1,8 @@
-// Firebase 설정 (사진에서 추출된 프로젝트 키값 적용)
+// Firebase 설정 (프로젝트 키값 적용)
 const firebaseConfig = {
   apiKey: "AIzaSyDgKi46rw82_fICQO02CbUk4e2FGMP3IeE",
   authDomain: "chma-422a0.firebaseapp.com",
-  databaseURL: "https://chma-422a0-default-rtdb.firebaseio.com", // Realtime DB 생성 시 자동 연결
+  databaseURL: "https://chma-422a0-default-rtdb.firebaseio.com",
   projectId: "chma-422a0",
   storageBucket: "chma-422a0.firebasestorage.app",
   messagingSenderId: "892005342672",
@@ -133,9 +133,9 @@ let currentLang = 'ko';
 let isAdmin = false;
 let selectedStar = 5;
 
-// LocalStorage 초기화
+// LocalStorage 노선 데이터 초기화
 let routes = JSON.parse(localStorage.getItem('bus_routes')) || defaultRoutes;
-let surveys = JSON.parse(localStorage.getItem('bus_surveys')) || [];
+let surveys = [];
 
 // Toast 메세지 표시
 function showToast(msg) {
@@ -208,28 +208,32 @@ function renderRoutes(query = '') {
       timesHtml += `<button class="add-time-chip" onclick="addTime('${r.id}')">${i18n[currentLang].addTime}</button>`;
     }
 
-card.innerHTML = `
-  <div class="route-head">
-    <div class="route-num">${terminalText}</div>
-
-    <div class="route-name">
-      ➔ ${destText}
-      <span class="stops">${viaText}</span>
-    </div>
-
-    <div class="route-tools">
-      <button class="btn btn-sm btn-green"
-              onclick="speakRoute('${r.id}')">
-        🔊
-      </button>
-    </div>
-
-  </div>
-
-  <div class="time-board">${timesHtml}</div>
-`;
+    card.innerHTML = `
+      <div class="route-head">
+        <div class="route-num">${terminalText}</div>
+        <div class="route-name">
+          ➔ ${destText}
+          <span class="stops">${viaText}</span>
+        </div>
+      </div>
+      <div class="time-board">${timesHtml}</div>
+    `;
 
     container.appendChild(card);
+  });
+}
+
+// Firebase DB에서 의견 실시간으로 불러와 화면에 출력
+function listenSurveys() {
+  db.ref('surveys').limitToLast(30).on('value', (snapshot) => {
+    const data = snapshot.val();
+    surveys = [];
+    if (data) {
+      Object.keys(data).forEach(key => {
+        surveys.unshift(data[key]); // 최신 등록 의견이 맨 위로
+      });
+    }
+    renderSurveys();
   });
 }
 
@@ -296,7 +300,6 @@ function saveAndRender() {
 
 // 이벤트 리스너 등록
 document.addEventListener('DOMContentLoaded', () => {
-  // 웹 브라우저에 구 버전 데이터가 남아있을 경우 초기화
   if (routes.length > 0 && typeof routes[0].terminal === 'string') {
     localStorage.removeItem('bus_routes');
     routes = defaultRoutes;
@@ -360,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 설문 제출
+  // 설문 제출 (Firebase DB에 실시간 저장)
   document.getElementById('submitSurveyBtn').addEventListener('click', () => {
     const comment = document.getElementById('surveyComment').value.trim();
     const newSurvey = {
@@ -368,47 +371,19 @@ document.addEventListener('DOMContentLoaded', () => {
       comment: comment,
       date: new Date().toLocaleDateString()
     };
-    surveys.unshift(newSurvey);
-    localStorage.setItem('bus_surveys', JSON.stringify(surveys));
-    document.getElementById('surveyComment').value = '';
-    showToast(i18n[currentLang].toastSurveySubmitted);
-    renderSurveys();
+
+    db.ref('surveys').push(newSurvey, (error) => {
+      if (!error) {
+        document.getElementById('surveyComment').value = '';
+        showToast(i18n[currentLang].toastSurveySubmitted);
+      } else {
+        alert("제출 실패: " + error.message);
+      }
+    });
   });
 
   // 초기 실행
   applyLanguage();
   renderRoutes();
-  renderSurveys();
-
-  function speak(text) {
-  speechSynthesis.cancel();
-
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = currentLang === "ko" ? "ko-KR" : "en-US";
-  utter.rate = 1;
-  utter.pitch = 1;
-
-  speechSynthesis.speak(utter);
-}
-  
-  window.speakRoute = function(routeId) {
-    const route = routes.find(r => r.id === routeId);
-    if (!route) return;
-
-    const terminal = typeof route.terminal === "object"
-        ? route.terminal[currentLang]
-        : route.terminal;
-
-    const dest = typeof route.dest === "object"
-        ? route.dest[currentLang]
-        : route.dest;
-
-    const times = route.times.map(t => t.time).join(", ");
-
-    const text = currentLang === "ko"
-        ? `${terminal}에서 ${dest}행 버스 출발 시간은 ${times}입니다.`
-        : `The bus from ${terminal} to ${dest} departs at ${times}.`;
-
-    speak(text);
-};
+  listenSurveys(); // 실시간 의견 수신 시작
 });
