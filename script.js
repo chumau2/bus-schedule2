@@ -71,6 +71,64 @@ const defaultRoutes = [
       { time: "16:30", modified: false },
       { time: "19:00", modified: false }
     ]
+  },
+  {
+    id: "r5",
+    terminal: { ko: "금왕(무극)터미널", en: "Geumwang(Mugeuk)" },
+    dest: { ko: "음성터미널", en: "Eumseong Terminal" },
+    via: { ko: "직행 / 일부 경유", en: "Direct / via stops" },
+    times: [
+      { time: "06:40", modified: false },
+      { time: "07:40", modified: false },
+      { time: "07:50", modified: false },
+      { time: "08:00", modified: false },
+      { time: "08:50", modified: false },
+      { time: "09:10 (복지관,사정리)", modified: false },
+      { time: "10:30", modified: false },
+      { time: "11:10", modified: false },
+      { time: "12:00", modified: false },
+      { time: "12:50", modified: false },
+      { time: "13:50", modified: false },
+      { time: "14:30", modified: false },
+      { time: "15:20", modified: false },
+      { time: "16:00", modified: false },
+      { time: "17:00", modified: false },
+      { time: "17:40", modified: false },
+      { time: "18:10", modified: false },
+      { time: "18:40 (사정리)", modified: false },
+      { time: "19:00", modified: false },
+      { time: "20:00", modified: false }
+    ]
+  },
+  {
+    id: "r6",
+    terminal: { ko: "음성터미널", en: "Eumseong Terminal" },
+    dest: { ko: "금왕(무극)터미널", en: "Geumwang(Mugeuk)" },
+    via: { ko: "직행 / 일부 경유", en: "Direct / via stops" },
+    times: [
+      { time: "07:00", modified: false },
+      { time: "07:30", modified: false },
+      { time: "07:50", modified: false },
+      { time: "08:00 (반도체고)", modified: false },
+      { time: "08:40", modified: false },
+      { time: "09:10 (복지관)", modified: false },
+      { time: "10:10", modified: false },
+      { time: "10:50", modified: false },
+      { time: "11:10", modified: false },
+      { time: "11:50", modified: false },
+      { time: "12:30", modified: false },
+      { time: "13:10 (사정리)", modified: false },
+      { time: "14:00", modified: false },
+      { time: "14:40", modified: false },
+      { time: "15:30", modified: false },
+      { time: "16:00", modified: false },
+      { time: "16:50", modified: false },
+      { time: "17:40", modified: false },
+      { time: "18:30", modified: false },
+      { time: "19:00", modified: false },
+      { time: "19:30", modified: false },
+      { time: "20:30", modified: false }
+    ]
   }
 ];
 
