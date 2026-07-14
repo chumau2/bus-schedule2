@@ -388,6 +388,19 @@ function saveAndRender() {
   renderRoutes(searchInput ? searchInput.value.trim() : '');
 }
 
+// 관리자 UI 상태(스트립 표시/버튼 숨김 등)를 갱신하는 공통 함수
+function updateAdminUI() {
+  const adminStrip = document.getElementById('adminStrip');
+  const adminBtn = document.getElementById('adminBtn');
+  if (isAdmin) {
+    if (adminStrip) adminStrip.style.display = 'flex';
+    if (adminBtn) adminBtn.style.display = 'none';
+  } else {
+    if (adminStrip) adminStrip.style.display = 'none';
+    if (adminBtn) adminBtn.style.display = 'block';
+  }
+}
+
 // 페이지 로드 후 실행
 document.addEventListener('DOMContentLoaded', () => {
   // Firebase SDK 초기화 안전 확인
@@ -432,51 +445,56 @@ document.addEventListener('DOMContentLoaded', () => {
   if (closeModalBtn && modal) closeModalBtn.addEventListener('click', () => modal.classList.remove('show'));
 
   // 관리자 로그인 처리
-const doLoginBtn = document.getElementById('doLoginBtn');
-if (doLoginBtn) {
-  doLoginBtn.addEventListener('click', () => {
-    const pwInput = document.getElementById('adminPwInput');
-    const loginErr = document.getElementById('loginErr');
-    
-    // 설정하신 관리자 비밀번호
-    if (pwInput && pwInput.value === 'admin1234') { 
-      window.isAdmin = true; // 1. 전역 관리자 권한 확실히 부여
-      
-      if (loginErr) loginErr.style.display = 'none';
-      
-      // 2. 모달 창 닫기 (클래스 제거 및 display 처리 둘 다 지원)
-      const loginModal = document.getElementById('loginModal');
-      if (loginModal) {
-        loginModal.classList.remove('show');
-        loginModal.classList.remove('active');
-        loginModal.style.display = 'none';
-      }
-      
-      pwInput.value = '';
-      
-      // 3. 삭제 버튼이 보이도록 화면 즉시 갱신
-      renderSurveys(); 
-      
-      showToast(i18n[currentLang]?.toastAdminSuccess || "관리자로 로그인되었습니다.");
-    } else {
-      if (loginErr) {
-        loginErr.textContent = i18n[currentLang]?.loginErr || "비밀번호가 올바르지 않습니다.";
-        loginErr.style.display = 'block';
+  const doLoginBtn = document.getElementById('doLoginBtn');
+  if (doLoginBtn) {
+    doLoginBtn.addEventListener('click', () => {
+      const pwInput = document.getElementById('adminPwInput');
+      const loginErr = document.getElementById('loginErr');
+
+      // 설정하신 관리자 비밀번호
+      if (pwInput && pwInput.value === 'admin1234') {
+        isAdmin = true; // ✅ FIX: window.isAdmin이 아니라 실제 사용되는 전역 변수를 갱신해야 함
+
+        if (loginErr) loginErr.style.display = 'none';
+
+        // 모달 창 닫기 (클래스 제거 및 display 처리 둘 다 지원)
+        const loginModal = document.getElementById('loginModal');
+        if (loginModal) {
+          loginModal.classList.remove('show');
+          loginModal.classList.remove('active');
+          loginModal.style.display = 'none';
+        }
+
+        pwInput.value = '';
+
+        // ✅ FIX: 관리자 UI(스트립 표시/버튼 숨김) 갱신
+        updateAdminUI();
+
+        // ✅ FIX: 시간표(수정/삭제/추가 버튼)와 의견 목록(삭제 버튼) 둘 다 즉시 갱신
+        renderRoutes(searchInput ? searchInput.value.trim() : '');
+        renderSurveys();
+
+        showToast(i18n[currentLang]?.toastAdminSuccess || "관리자로 로그인되었습니다.");
       } else {
-        alert(i18n[currentLang]?.loginErr || "비밀번호가 올바르지 않습니다.");
+        if (loginErr) {
+          loginErr.textContent = i18n[currentLang]?.loginErr || "비밀번호가 올바르지 않습니다.";
+          loginErr.style.display = 'block';
+        } else {
+          alert(i18n[currentLang]?.loginErr || "비밀번호가 올바르지 않습니다.");
+        }
       }
-    }
-  });
-}
+    });
+  }
+
   // 로그아웃
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       isAdmin = false;
-      document.getElementById('adminStrip').style.display = 'none';
-      document.getElementById('adminBtn').style.display = 'block';
+      updateAdminUI();
       showToast(i18n[currentLang].toastLoggedOut);
-      renderRoutes();
+      renderRoutes(searchInput ? searchInput.value.trim() : '');
+      renderSurveys();
     });
   }
 
@@ -498,7 +516,7 @@ if (doLoginBtn) {
     submitBtn.addEventListener('click', () => {
       const commentInput = document.getElementById('surveyComment');
       const comment = commentInput ? commentInput.value.trim() : '';
-      
+
       const newSurvey = {
         star: selectedStar,
         comment: comment,
@@ -522,6 +540,7 @@ if (doLoginBtn) {
 
   // 초기 시작 실행
   applyLanguage();
+  updateAdminUI();
   renderRoutes();
 });
 
@@ -534,7 +553,7 @@ window.deleteSurvey = function(surveyId) {
 
   if (confirm("이 의견을 정말 삭제하시겠습니까?")) {
     const activeDb = db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
-    
+
     if (activeDb) {
       activeDb.ref('surveys/' + surveyId).remove()
         .then(() => {
