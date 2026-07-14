@@ -1,3 +1,20 @@
+// Firebase 설정 (사진에서 추출된 프로젝트 키값 적용)
+const firebaseConfig = {
+  apiKey: "AIzaSyDgKi46rw82_fICQO02CbUk4e2FGMP3IeE",
+  authDomain: "chma-422a0.firebaseapp.com",
+  databaseURL: "https://chma-422a0-default-rtdb.firebaseio.com", // Realtime DB 생성 시 자동 연결
+  projectId: "chma-422a0",
+  storageBucket: "chma-422a0.firebasestorage.app",
+  messagingSenderId: "892005342672",
+  appId: "1:892005342672:web:84e1a91af343b034f2edd5"
+};
+
+// Firebase 초기화 및 Realtime Database 연결
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
 // 초기 노선 데이터 정의 (한국어 / 영어 다국어 지원)
 const defaultRoutes = [
   {
