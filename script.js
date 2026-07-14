@@ -430,25 +430,39 @@ document.addEventListener('DOMContentLoaded', () => {
   if (adminBtn && modal) adminBtn.addEventListener('click', () => modal.classList.add('show'));
   if (closeModalBtn && modal) closeModalBtn.addEventListener('click', () => modal.classList.remove('show'));
 
-  // 로그인
-  const doLoginBtn = document.getElementById('doLoginBtn');
-  if (doLoginBtn) {
-    doLoginBtn.addEventListener('click', () => {
-      const pw = document.getElementById('adminPwInput').value;
-      if (pw === 'admin1234') {
-        isAdmin = true;
-        if (modal) modal.classList.remove('show');
-        document.getElementById('adminStrip').style.display = 'flex';
-        document.getElementById('adminBtn').style.display = 'none';
-        document.getElementById('adminPwInput').value = '';
-        document.getElementById('loginErr').style.display = 'none';
-        showToast(i18n[currentLang].toastAdminSuccess);
-        renderRoutes();
+  // 관리자 로그인 처리
+const doLoginBtn = document.getElementById('doLoginBtn');
+if (doLoginBtn) {
+  doLoginBtn.addEventListener('click', () => {
+    const pwInput = document.getElementById('adminPwInput');
+    const loginErr = document.getElementById('loginErr');
+    
+    // 설정하신 관리자 비밀번호
+    if (pwInput && pwInput.value === 'admin1234') { 
+      isAdmin = true; // 1. 관리자 권한 부여
+      
+      if (loginErr) loginErr.style.display = 'none';
+      
+      // 2. 모달 창 닫기
+      const loginModal = document.getElementById('loginModal');
+      if (loginModal) loginModal.style.display = 'none';
+      
+      pwInput.value = '';
+      
+      // 3. 🌟 삭제 버튼을 보이게 화면 즉시 갱신!
+      renderSurveys(); 
+      
+      showToast("관리자로 로그인되었습니다.");
+    } else {
+      if (loginErr) {
+        loginErr.textContent = "비밀번호가 올바르지 않습니다.";
+        loginErr.style.display = 'block';
       } else {
-        document.getElementById('loginErr').style.display = 'block';
+        alert("비밀번호가 올바르지 않습니다.");
       }
-    });
-  }
+    }
+  });
+}
 
   // 로그아웃
   const logoutBtn = document.getElementById('logoutBtn');
