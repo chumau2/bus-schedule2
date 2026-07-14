@@ -309,14 +309,17 @@ function listenSurveys() {
     surveys = [];
     if (data) {
       Object.keys(data).forEach(key => {
-        surveys.unshift(data[key]);
+        surveys.unshift({
+          id: key,
+          ...data[key]
+        });
       });
     }
     renderSurveys();
   });
 }
 
-// 설문 목록 렌더링
+// 설문/의견 목록 렌더링 (관리자 모드일 때 삭제 버튼 표시)
 function renderSurveys() {
   const container = document.getElementById('surveyList');
   if (!container) return;
@@ -324,6 +327,20 @@ function renderSurveys() {
     container.innerHTML = '';
     return;
   }
+
+  container.innerHTML = '<h3>최근 작성된 의견</h3>' + surveys.map(s => `
+    <div class="survey-item">
+      <div class="si-top">
+        <span class="si-stars">${'★'.repeat(s.star || 5)}${'☆'.repeat(5 - (s.star || 5))}</span>
+        <div class="si-right">
+          <span class="si-date">${s.date || ''}</span>
+          ${isAdmin ? `<button class="survey-del-btn" onclick="deleteSurvey('${s.id}')">삭제 ✕</button>` : ''}
+        </div>
+      </div>
+      ${s.comment ? `<div class="si-comment">${escapeHtml(s.comment)}</div>` : '<div class="si-nocomment">의견 내용 없음</div>'}
+    </div>
+  `).join('');
+}
 
   container.innerHTML = '<h3>최근 작성된 의견</h3>' + surveys.map(s => `
     <div class="survey-item">
@@ -498,3 +515,24 @@ document.addEventListener('DOMContentLoaded', () => {
   applyLanguage();
   renderRoutes();
 });
+
+// 관리자 전용: 의견 삭제 함수
+window.deleteSurvey = function(surveyId) {
+  if (!isAdmin) {
+    alert("관리자만 삭제할 수 있습니다.");
+    return;
+  }
+
+  if (confirm("이 의견을 정말 삭제하시겠습니까?")) {
+    const activeDb = db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
+    if (activeDb) {
+      activeDb.ref('surveys/' + surveyId).remove()
+        .then(() => {
+          showToast("의견이 삭제되었습니다.");
+        })
+        .catch((error) => {
+          alert("삭제 실패: " + error.message);
+        });
+    }
+  }
+};
