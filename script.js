@@ -1,4 +1,4 @@
-// Firebase 설정 (1번만 선언)
+// Firebase 설정 (프로젝트 키값)
 const firebaseConfig = {
   apiKey: "AIzaSyDgKi46rw82_fICQO02CbUk4e2FGMP3IeE",
   authDomain: "chma-422a0.firebaseapp.com",
@@ -9,19 +9,8 @@ const firebaseConfig = {
   appId: "1:892005342672:web:84e1a91af343b034f2edd5"
 };
 
-// Firebase 초기화 (안전하게 window 객체에서 불러오기)
-let db;
-window.addEventListener('DOMContentLoaded', () => {
-  if (typeof firebase !== 'undefined') {
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    db = firebase.database();
-    listenSurveys(); // DB 로드 완료 후 의견 불러오기 실행
-  } else {
-    console.error("Firebase SDK가 아직 로드되지 않았습니다.");
-  }
-});
+// Firebase 변수 선언
+let db = null;
 
 // 초기 노선 데이터 정의 (한국어 / 영어 다국어 지원)
 const defaultRoutes = [
@@ -145,9 +134,10 @@ let selectedStar = 5;
 let routes = JSON.parse(localStorage.getItem('bus_routes')) || defaultRoutes;
 let surveys = [];
 
-// Toast 메세지 표시
+// Toast 메세지
 function showToast(msg) {
   const toast = document.getElementById('toast');
+  if (!toast) return;
   document.getElementById('toastMsg').innerText = msg;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3000);
@@ -163,12 +153,29 @@ function applyLanguage() {
     const key = el.getAttribute('data-i18n-ph');
     if (i18n[currentLang][key]) el.placeholder = i18n[currentLang][key];
   });
-  document.getElementById('langToggle').innerText = currentLang === 'ko' ? 'ENG' : 'KOR';
+  const langBtn = document.getElementById('langToggle');
+  if (langBtn) langBtn.innerText = currentLang === 'ko' ? 'ENG' : 'KOR';
 }
+
+// TTS (음성 읽기) 기능
+window.speakRoute = function(terminal, dest, timesText) {
+  if (!('speechSynthesis' in window)) {
+    alert("이 브라우저는 음성 읽기(TTS) 기능을 지원하지 않습니다.");
+    return;
+  }
+  window.speechSynthesis.cancel(); // 기존 음성 취소
+
+  const text = `${terminal}에서 ${dest}로 가는 버스 시간표입니다. 출발 시간은 ${timesText} 입니다.`;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = currentLang === 'ko' ? 'ko-KR' : 'en-US';
+  utterance.rate = 0.9;
+  window.speechSynthesis.speak(utterance);
+};
 
 // 시간표 화면 렌더링
 function renderRoutes(query = '') {
   const container = document.getElementById('routeList');
+  if (!container) return;
   container.innerHTML = '';
 
   const q = query.toLowerCase();
@@ -216,13 +223,18 @@ function renderRoutes(query = '') {
       timesHtml += `<button class="add-time-chip" onclick="addTime('${r.id}')">${i18n[currentLang].addTime}</button>`;
     }
 
+    const timesSummary = r.times.map(t => t.time).join(', ');
+
     card.innerHTML = `
       <div class="route-head">
-        <div class="route-num">${terminalText}</div>
-        <div class="route-name">
-          ➔ ${destText}
-          <span class="stops">${viaText}</span>
+        <div class="route-info-group">
+          <div class="route-num">${terminalText}</div>
+          <div class="route-name">
+            ➔ ${destText}
+            <span class="stops">${viaText}</span>
+          </div>
         </div>
+        <button class="tts-btn" onclick="speakRoute('${terminalText}', '${destText}', '${timesSummary}')" title="음성으로 듣기">🔊</button>
       </div>
       <div class="time-board">${timesHtml}</div>
     `;
@@ -231,14 +243,15 @@ function renderRoutes(query = '') {
   });
 }
 
-// Firebase DB에서 의견 실시간으로 불러와 화면에 출력
+// Firebase DB에서 의견 실시간 불러오기
 function listenSurveys() {
+  if (!db) return;
   db.ref('surveys').limitToLast(30).on('value', (snapshot) => {
     const data = snapshot.val();
     surveys = [];
     if (data) {
       Object.keys(data).forEach(key => {
-        surveys.unshift(data[key]); // 최신 등록 의견이 맨 위로
+        surveys.unshift(data[key]);
       });
     }
     renderSurveys();
@@ -248,6 +261,7 @@ function listenSurveys() {
 // 설문 목록 렌더링
 function renderSurveys() {
   const container = document.getElementById('surveyList');
+  if (!container) return;
   if (surveys.length === 0) {
     container.innerHTML = '';
     return;
@@ -256,8 +270,8 @@ function renderSurveys() {
   container.innerHTML = '<h3>최근 작성된 의견</h3>' + surveys.map(s => `
     <div class="survey-item">
       <div class="si-top">
-        <span class="si-stars">${'★'.repeat(s.star)}${'☆'.repeat(5 - s.star)}</span>
-        <span class="si-date">${s.date}</span>
+        <span class="si-stars">${'★'.repeat(s.star || 5)}${'☆'.repeat(5 - (s.star || 5))}</span>
+        <span class="si-date">${s.date || ''}</span>
       </div>
       ${s.comment ? `<div class="si-comment">${escapeHtml(s.comment)}</div>` : '<div class="si-nocomment">의견 내용 없음</div>'}
     </div>
@@ -268,7 +282,7 @@ function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// 시간 관리 (추가/수정/삭제)
+// 시간 수정 관리
 window.addTime = function(routeId) {
   const newTime = prompt("추가할 시간을 입력하세요 (예: 14:20):");
   if (!newTime) return;
@@ -303,67 +317,90 @@ window.deleteTime = function(routeId, index) {
 
 function saveAndRender() {
   localStorage.setItem('bus_routes', JSON.stringify(routes));
-  renderRoutes(document.getElementById('searchInput').value.trim());
+  const searchInput = document.getElementById('searchInput');
+  renderRoutes(searchInput ? searchInput.value.trim() : '');
 }
 
-// 이벤트 리스너 등록
+// 페이지 로드 후 실행
 document.addEventListener('DOMContentLoaded', () => {
+  // Firebase SDK 초기화 안전 확인
+  if (typeof firebase !== 'undefined') {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.database();
+    listenSurveys();
+  }
+
   if (routes.length > 0 && typeof routes[0].terminal === 'string') {
     localStorage.removeItem('bus_routes');
     routes = defaultRoutes;
   }
 
-  // 검색 기능
-  document.getElementById('searchBtn').addEventListener('click', () => {
-    renderRoutes(document.getElementById('searchInput').value.trim());
-  });
-  document.getElementById('searchInput').addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') renderRoutes(e.target.value.trim());
-  });
+  // 검색
+  const searchBtn = document.getElementById('searchBtn');
+  const searchInput = document.getElementById('searchInput');
+  if (searchBtn && searchInput) {
+    searchBtn.addEventListener('click', () => renderRoutes(searchInput.value.trim()));
+    searchInput.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') renderRoutes(e.target.value.trim());
+    });
+  }
 
-  // 언어 변경
-  document.getElementById('langToggle').addEventListener('click', () => {
-    currentLang = currentLang === 'ko' ? 'en' : 'ko';
-    applyLanguage();
-    renderRoutes(document.getElementById('searchInput').value.trim());
-  });
+  // 언어 설정
+  const langToggle = document.getElementById('langToggle');
+  if (langToggle) {
+    langToggle.addEventListener('click', () => {
+      currentLang = currentLang === 'ko' ? 'en' : 'ko';
+      applyLanguage();
+      renderRoutes(searchInput ? searchInput.value.trim() : '');
+    });
+  }
 
-  // 관리자 모달 제어
+  // 관리자 모달
   const modal = document.getElementById('loginModal');
-  document.getElementById('adminBtn').addEventListener('click', () => modal.classList.add('show'));
-  document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.remove('show'));
+  const adminBtn = document.getElementById('adminBtn');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  if (adminBtn && modal) adminBtn.addEventListener('click', () => modal.classList.add('show'));
+  if (closeModalBtn && modal) closeModalBtn.addEventListener('click', () => modal.classList.remove('show'));
 
-  // 로그인 처리
-  document.getElementById('doLoginBtn').addEventListener('click', () => {
-    const pw = document.getElementById('adminPwInput').value;
-    if (pw === 'admin1234') {
-      isAdmin = true;
-      modal.classList.remove('show');
-      document.getElementById('adminStrip').style.display = 'flex';
-      document.getElementById('adminBtn').style.display = 'none';
-      document.getElementById('adminPwInput').value = '';
-      document.getElementById('loginErr').style.display = 'none';
-      showToast(i18n[currentLang].toastAdminSuccess);
-      renderRoutes();
-    } else {
-      document.getElementById('loginErr').style.display = 'block';
-    }
-  });
+  // 로그인
+  const doLoginBtn = document.getElementById('doLoginBtn');
+  if (doLoginBtn) {
+    doLoginBtn.addEventListener('click', () => {
+      const pw = document.getElementById('adminPwInput').value;
+      if (pw === 'admin1234') {
+        isAdmin = true;
+        if (modal) modal.classList.remove('show');
+        document.getElementById('adminStrip').style.display = 'flex';
+        document.getElementById('adminBtn').style.display = 'none';
+        document.getElementById('adminPwInput').value = '';
+        document.getElementById('loginErr').style.display = 'none';
+        showToast(i18n[currentLang].toastAdminSuccess);
+        renderRoutes();
+      } else {
+        document.getElementById('loginErr').style.display = 'block';
+      }
+    });
+  }
 
   // 로그아웃
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    isAdmin = false;
-    document.getElementById('adminStrip').style.display = 'none';
-    document.getElementById('adminBtn').style.display = 'block';
-    showToast(i18n[currentLang].toastLoggedOut);
-    renderRoutes();
-  });
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      isAdmin = false;
+      document.getElementById('adminStrip').style.display = 'none';
+      document.getElementById('adminBtn').style.display = 'block';
+      showToast(i18n[currentLang].toastLoggedOut);
+      renderRoutes();
+    });
+  }
 
-  // 별점 평가
+  // 별점 클릭
   const stars = document.querySelectorAll('#starGroup .star');
   stars.forEach(star => {
     star.addEventListener('click', () => {
-      selectedStar = parseInt(star.getAttribute('data-val'));
+      selectedStar = parseInt(star.getAttribute('data-val')) || 5;
       stars.forEach((s, idx) => {
         if (idx < selectedStar) s.classList.add('active');
         else s.classList.remove('active');
@@ -371,27 +408,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 설문 제출 (Firebase DB에 실시간 저장)
-  document.getElementById('submitSurveyBtn').addEventListener('click', () => {
-    const comment = document.getElementById('surveyComment').value.trim();
-    const newSurvey = {
-      star: selectedStar,
-      comment: comment,
-      date: new Date().toLocaleDateString()
-    };
+  // 의견 제출 (Firebase DB)
+  const submitBtn = document.getElementById('submitSurveyBtn');
+  if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+      const commentInput = document.getElementById('surveyComment');
+      const comment = commentInput ? commentInput.value.trim() : '';
+      
+      const newSurvey = {
+        star: selectedStar,
+        comment: comment,
+        date: new Date().toLocaleDateString()
+      };
 
-    db.ref('surveys').push(newSurvey, (error) => {
-      if (!error) {
-        document.getElementById('surveyComment').value = '';
-        showToast(i18n[currentLang].toastSurveySubmitted);
+      if (db) {
+        db.ref('surveys').push(newSurvey, (error) => {
+          if (!error) {
+            if (commentInput) commentInput.value = '';
+            showToast(i18n[currentLang].toastSurveySubmitted);
+          } else {
+            alert("제출 실패: " + error.message);
+          }
+        });
       } else {
-        alert("제출 실패: " + error.message);
+        alert("데이터베이스 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
       }
     });
-  });
+  }
 
-  // 초기 실행
+  // 초기 시작 실행
   applyLanguage();
   renderRoutes();
-  listenSurveys(); // 실시간 의견 수신 시작
 });
