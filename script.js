@@ -301,17 +301,19 @@ function renderRoutes(query = '') {
   });
 }
 
-// Firebase DB에서 의견 실시간 불러오기
+// Firebase DB에서 의견 실시간 불러오기 (ID값 정상 추출)
 function listenSurveys() {
   if (!db) return;
   db.ref('surveys').limitToLast(30).on('value', (snapshot) => {
-    const data = snapshot.val();
     surveys = [];
-    if (data) {
-      Object.keys(data).forEach(key => {
+    if (snapshot.exists()) {
+      snapshot.forEach((childSnapshot) => {
+        const item = childSnapshot.val();
         surveys.unshift({
-          id: key,
-          ...data[key]
+          id: childSnapshot.key, // 🌟 Firebase 데이터의 고유 ID(키)를 정확히 추출합니다!
+          star: item.star,
+          comment: item.comment,
+          date: item.date
         });
       });
     }
