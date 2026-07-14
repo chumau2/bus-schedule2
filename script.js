@@ -1,3 +1,5 @@
+let isAdmin = false;
+
 // Firebase 설정
 const firebaseConfig = {
   apiKey: "AIzaSyDgKi46rw82_fICQO02CbUk4e2FGMP3IeE",
@@ -185,7 +187,6 @@ const i18n = {
 };
 
 let currentLang = 'ko';
-let isAdmin = false;
 let selectedStar = 5;
 
 // LocalStorage 노선 데이터 초기화
@@ -439,31 +440,34 @@ if (doLoginBtn) {
     
     // 설정하신 관리자 비밀번호
     if (pwInput && pwInput.value === 'admin1234') { 
-      isAdmin = true; // 1. 관리자 권한 부여
+      window.isAdmin = true; // 1. 전역 관리자 권한 확실히 부여
       
       if (loginErr) loginErr.style.display = 'none';
       
-      // 2. 모달 창 닫기
+      // 2. 모달 창 닫기 (클래스 제거 및 display 처리 둘 다 지원)
       const loginModal = document.getElementById('loginModal');
-      if (loginModal) loginModal.style.display = 'none';
+      if (loginModal) {
+        loginModal.classList.remove('show');
+        loginModal.classList.remove('active');
+        loginModal.style.display = 'none';
+      }
       
       pwInput.value = '';
       
-      // 3. 🌟 삭제 버튼을 보이게 화면 즉시 갱신!
+      // 3. 삭제 버튼이 보이도록 화면 즉시 갱신
       renderSurveys(); 
       
-      showToast("관리자로 로그인되었습니다.");
+      showToast(i18n[currentLang]?.toastAdminSuccess || "관리자로 로그인되었습니다.");
     } else {
       if (loginErr) {
-        loginErr.textContent = "비밀번호가 올바르지 않습니다.";
+        loginErr.textContent = i18n[currentLang]?.loginErr || "비밀번호가 올바르지 않습니다.";
         loginErr.style.display = 'block';
       } else {
-        alert("비밀번호가 올바르지 않습니다.");
+        alert(i18n[currentLang]?.loginErr || "비밀번호가 올바르지 않습니다.");
       }
     }
   });
 }
-
   // 로그아웃
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
