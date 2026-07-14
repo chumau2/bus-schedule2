@@ -525,6 +525,7 @@ window.deleteSurvey = function(surveyId) {
 
   if (confirm("이 의견을 정말 삭제하시겠습니까?")) {
     const activeDb = db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
+    
     if (activeDb) {
       activeDb.ref('surveys/' + surveyId).remove()
         .then(() => {
@@ -533,6 +534,8 @@ window.deleteSurvey = function(surveyId) {
         .catch((error) => {
           alert("삭제 실패: " + error.message);
         });
+    } else {
+      alert("데이터베이스 연결 상태를 확인해주세요.");
     }
   }
 };
