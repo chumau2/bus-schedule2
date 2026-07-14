@@ -342,17 +342,6 @@ function renderSurveys() {
   `).join('');
 }
 
-  container.innerHTML = '<h3>최근 작성된 의견</h3>' + surveys.map(s => `
-    <div class="survey-item">
-      <div class="si-top">
-        <span class="si-stars">${'★'.repeat(s.star || 5)}${'☆'.repeat(5 - (s.star || 5))}</span>
-        <span class="si-date">${s.date || ''}</span>
-      </div>
-      ${s.comment ? `<div class="si-comment">${escapeHtml(s.comment)}</div>` : '<div class="si-nocomment">의견 내용 없음</div>'}
-    </div>
-  `).join('');
-}
-
 function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
