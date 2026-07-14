@@ -319,3 +319,24 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px
   .header-row { gap: 8px; }
   .brand h1 { font-size: 15px; }
 }
+
+.si-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.survey-del-btn {
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.survey-del-btn:hover {
+  background-color: #d9363e;
+}
