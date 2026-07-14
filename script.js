@@ -1,8 +1,8 @@
-// Firebase 설정 (프로젝트 키값)
+// Firebase 설정
 const firebaseConfig = {
   apiKey: "AIzaSyDgKi46rw82_fICQO02CbUk4e2FGMP3IeE",
   authDomain: "chma-422a0.firebaseapp.com",
-  databaseURL: "https://chma-422a0-default-rtdb.firebaseio.com",
+  databaseURL: "https://chma-422a0-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "chma-422a0",
   storageBucket: "chma-422a0.firebasestorage.app",
   messagingSenderId: "892005342672",
